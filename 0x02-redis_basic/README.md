@@ -94,7 +94,6 @@ This project is designed to help you learn to use the Redis NoSQL data storage a
   - Use `requests` module.
   - Track URL access counts in key `"count:{url}"`.
   - Cache result with 10 seconds expiration.
-  - Use [http://slowwly.robertomurray.co.uk](http://slowwly.robertomurray.co.uk) for testing.
   - Bonus: Implement with decorators.
 - **File**: `web.py`
 
