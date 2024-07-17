@@ -35,11 +35,3 @@ def get_page(url: str) -> str:
     and tracking the request.
     '''
     return requests.get(url).text
-
-
-# Example usage for testing:
-if __name__ == "__main__":
-    test_url = "http://slowwly.robertomurray.co.uk"
-    print(get_page(test_url))
-    print(f"URL accessed {redis_store.get(f'count:{test_url}').decode('utf-8')} times.")
-
