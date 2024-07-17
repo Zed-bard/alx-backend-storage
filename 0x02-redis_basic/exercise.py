@@ -33,7 +33,7 @@ def call_history(method: Callable) -> Callable:
             self._redis.rpush(in_key, str(args))
         output = method(self, *args, **kwargs)
         if isinstance(self._redis, redis.Redis):
-            self._redis.rpush(out_key, output)
+            self._redis.rpush(out_key, str(output))
         return output
     return invoker
 
@@ -59,7 +59,7 @@ def replay(fn: Callable) -> None:
         print('{}(*{}) -> {}'.format(
             fxn_name,
             fxn_input.decode("utf-8"),
-            fxn_output,
+            fxn_output.decode("utf-8"),
         ))
 
 
@@ -84,20 +84,21 @@ class Cache:
     def get(
             self,
             key: str,
-            fn: Callable = None,
-            ) -> Union[str, bytes, int, float]:
+            fn: Callable[[bytes], Union[str, bytes, int, float]] = None,
+            ) -> Union[str, bytes, int, float, None]:
         '''Retrieves a value from a Redis data storage.
         '''
         data = self._redis.get(key)
+        if data is None:
+            return None
         return fn(data) if fn is not None else data
 
-    def get_str(self, key: str) -> str:
+    def get_str(self, key: str) -> Union[str, None]:
         '''Retrieves a string value from a Redis data storage.
         '''
         return self.get(key, lambda x: x.decode('utf-8'))
 
-    def get_int(self, key: str) -> int:
+    def get_int(self, key: str) -> Union[int, None]:
         '''Retrieves an integer value from a Redis data storage.
         '''
         return self.get(key, lambda x: int(x))
-
