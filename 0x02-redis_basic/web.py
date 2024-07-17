@@ -1,34 +1,45 @@
-import requests
+#!/usr/bin/env python3
+'''A module with tools for request caching and tracking.
+'''
 import redis
-import time
+import requests
 from functools import wraps
+from typing import Callable
 
-# Connect to the local Redis server
-cache = redis.Redis(host='localhost', port=6379, db=0)
 
-def cache_page(expire_time=10):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(url):
-            # Track the number of times a URL is accessed
-            count_key = f"count:{url}"
-            cache.incr(count_key)
+redis_store = redis.Redis()
+'''The module-level Redis instance.
+'''
 
-            # Check if the page is already cached
-            cached_page = cache.get(url)
-            if cached_page:
-                print("Cache hit")
-                return cached_page.decode('utf-8')
 
-            # If not cached, fetch the page
-            print("Cache miss")
-            page_content = func(url)
-            cache.setex(url, expire_time, page_content)
-            return page_content
-        return wrapper
-    return decorator
+def data_cacher(method: Callable) -> Callable:
+    '''Caches the output of fetched data.
+    '''
+    @wraps(method)
+    def invoker(url: str) -> str:
+        '''The wrapper function for caching the output.
+        '''
+        redis_store.incr(f'count:{url}')
+        result = redis_store.get(f'result:{url}')
+        if result:
+            return result.decode('utf-8')
+        result = method(url)
+        redis_store.setex(f'result:{url}', 10, result)
+        return result
+    return invoker
 
-@cache_page(expire_time=10)
+
+@data_cacher
 def get_page(url: str) -> str:
-    response = requests.get(url)
-    return response.text
+    '''Returns the content of a URL after caching the request's response,
+    and tracking the request.
+    '''
+    return requests.get(url).text
+
+
+# Example usage for testing:
+if __name__ == "__main__":
+    test_url = "http://slowwly.robertomurray.co.uk"
+    print(get_page(test_url))
+    print(f"URL accessed {redis_store.get(f'count:{test_url}').decode('utf-8')} times.")
+
